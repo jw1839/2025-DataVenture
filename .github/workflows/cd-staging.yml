@@ -1,0 +1,122 @@
+name: CD - Deploy to Staging (GCP Cloud Run)
+
+on:
+  push:
+    branches: [develop]
+  workflow_dispatch:
+
+# 동시성 제어: 동일한 브랜치에서 이전 배포 취소
+concurrency:
+  group: deploy-staging-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: asia-northeast3
+  SERVICE_CORE_IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/flex-recruiter/service-core
+  SERVICE_AI_IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/flex-recruiter/service-ai
+
+jobs:
+  # Backend Core 배포
+  deploy-service-core:
+    name: Deploy Backend Core to Cloud Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout 코드
+        uses: actions/checkout@v4
+      
+      - name: GCP 인증
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      
+      - name: Cloud SDK 설정
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Docker 인증
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev
+      
+      - name: Docker 이미지 빌드
+        run: |
+          docker build -t ${{ env.SERVICE_CORE_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.SERVICE_CORE_IMAGE }}:latest \
+                       ./service-core
+      
+      - name: Docker 이미지 푸시
+        run: |
+          docker push ${{ env.SERVICE_CORE_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.SERVICE_CORE_IMAGE }}:latest
+      
+      - name: Cloud Run 배포
+        run: |
+          gcloud run deploy service-core-staging \
+            --image=${{ env.SERVICE_CORE_IMAGE }}:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --set-env-vars="NODE_ENV=staging" \
+            --set-secrets="DATABASE_URL=DATABASE_URL_STAGING:latest,JWT_SECRET=JWT_SECRET:latest" \
+            --memory=512Mi \
+            --cpu=1 \
+            --min-instances=0 \
+            --max-instances=10 \
+            --port=8080
+
+  # Backend AI 배포
+  deploy-service-ai:
+    name: Deploy Backend AI to Cloud Run
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout 코드
+        uses: actions/checkout@v4
+      
+      - name: GCP 인증
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      
+      - name: Cloud SDK 설정
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Docker 인증
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev
+      
+      - name: Docker 이미지 빌드
+        run: |
+          docker build -t ${{ env.SERVICE_AI_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.SERVICE_AI_IMAGE }}:latest \
+                       ./service-ai
+      
+      - name: Docker 이미지 푸시
+        run: |
+          docker push ${{ env.SERVICE_AI_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.SERVICE_AI_IMAGE }}:latest
+      
+      - name: Cloud Run 배포
+        run: |
+          gcloud run deploy service-ai-staging \
+            --image=${{ env.SERVICE_AI_IMAGE }}:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ env.GCP_REGION }} \
+            --no-allow-unauthenticated \
+            --set-secrets="OPENAI_API_KEY=OPENAI_API_KEY:latest" \
+            --memory=1Gi \
+            --cpu=2 \
+            --min-instances=0 \
+            --max-instances=5 \
+            --port=8000
+

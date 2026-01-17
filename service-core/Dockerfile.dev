@@ -1,0 +1,32 @@
+# Node.js Backend Core API - Development Dockerfile
+# 공식 베스트 프랙티스: 개발 환경에서는 모든 의존성 포함, 소스 볼륨 마운트
+
+FROM node:20-slim
+
+WORKDIR /app
+
+# Prisma를 위한 OpenSSL 및 필수 라이브러리 설치
+RUN apt-get update && \
+    apt-get install -y openssl ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
+
+# package.json과 package-lock.json 복사
+COPY package*.json ./
+COPY prisma ./prisma/
+
+# 모든 의존성 설치 (개발 의존성 포함)
+RUN npm install
+
+# Prisma Client 생성
+RUN npx prisma generate
+
+# 환경 변수 설정
+ENV NODE_ENV=development
+
+# 소스 코드는 볼륨 마운트로 처리
+
+EXPOSE 8080
+
+# 개발 모드로 실행 (hot reload)
+CMD ["npm", "run", "dev"]
+

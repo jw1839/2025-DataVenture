@@ -1,0 +1,29 @@
+# Python AI Engine Development Dockerfile (uv 공식 모범 사례)
+FROM ghcr.io/astral-sh/uv:python3.11-bookworm-slim
+
+WORKDIR /app
+
+# Python 환경 설정
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_COMPILE_BYTECODE=0
+
+# 시스템 의존성 설치
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    postgresql-client \
+    && rm -rf /var/lib/apt/lists/*
+
+# requirements.txt 복사 및 설치 (캐시 마운트 활용)
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv pip install --system -r requirements.txt
+
+# 애플리케이션 코드는 볼륨 마운트로 처리
+
+EXPOSE 8000
+
+# Uvicorn 서버 실행 (개발 모드 with reload)
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+

@@ -1,0 +1,23 @@
+# Next.js 개발 환경용 Dockerfile
+FROM node:20-alpine
+
+WORKDIR /app
+
+# package.json 복사
+COPY package*.json ./
+
+# npm 캐시 최적화 및 의존성 설치
+# --prefer-offline: 캐시 우선 사용으로 빌드 속도 향상
+# --no-audit: 보안 감사 스킵으로 설치 속도 향상 (개발 환경)
+RUN npm install --prefer-offline --no-audit || \
+    (echo "=== NPM Install Failed ===" && \
+     echo "Dependency installation error. Check package.json for version conflicts." && \
+     exit 1)
+
+# 소스 코드 복사
+COPY . .
+
+EXPOSE 3000
+
+CMD ["npm", "run", "dev"]
+

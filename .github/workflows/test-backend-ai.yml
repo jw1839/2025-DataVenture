@@ -1,0 +1,47 @@
+name: Test Backend AI
+
+on:
+  pull_request:
+    paths:
+      - 'service-ai/**'
+      - '.github/workflows/test-backend-ai.yml'
+  push:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'service-ai/**'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./service-ai
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: service-ai/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run tests (Import validation)
+        run: |
+          python -c "from app.services.embedding_service import calculate_cosine_similarity; print('✓ Embedding service OK')"
+          python -c "from app.services.matching_service import match_candidate_with_job; print('✓ Matching service OK')"
+          python -c "from app.services.question_generator import generate_first_question; print('✓ Question generator OK')"
+          python -c "from app.services.evaluation_generator import generate_complete_evaluation; print('✓ Evaluation generator OK')"
+          python -c "from app.services.answer_analyzer import analyze_answer; print('✓ Answer analyzer OK')"
+        env:
+          OPENAI_API_KEY: sk-test-fake-key
+

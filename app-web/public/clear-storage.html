@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>localStorage 정리</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .container {
+            background: #f5f5f5;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #0891b2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 5px;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background: #0e7490;
+        }
+        button.danger {
+            background: #dc2626;
+        }
+        button.danger:hover {
+            background: #b91c1c;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: white;
+            border-radius: 6px;
+            border-left: 4px solid #0891b2;
+        }
+        .success {
+            border-left-color: #059669;
+            color: #059669;
+        }
+        .info {
+            padding: 15px;
+            background: #dbeafe;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            color: #1e40af;
+        }
+        pre {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 localStorage 정리 도구</h1>
+        
+        <div class="info">
+            <strong>안내:</strong> 인증 토큰 관련 문제가 있을 때 사용하세요.<br>
+            이전 'auth_token' 키를 삭제하고 새로운 'token' 키로 통일합니다.
+        </div>
+
+        <h3>현재 저장된 데이터:</h3>
+        <pre id="storage-content">로딩 중...</pre>
+
+        <div style="margin-top: 20px;">
+            <button onclick="removeOldToken()">이전 토큰만 삭제 (auth_token)</button>
+            <button onclick="clearAll()" class="danger">전체 초기화</button>
+            <button onclick="refresh()">새로고침</button>
+        </div>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        function displayStorage() {
+            const storage = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                storage[key] = localStorage.getItem(key);
+            }
+            document.getElementById('storage-content').textContent = 
+                JSON.stringify(storage, null, 2);
+        }
+
+        function removeOldToken() {
+            localStorage.removeItem('auth_token');
+            showResult('✅ 이전 토큰(auth_token)을 삭제했습니다.', true);
+            displayStorage();
+        }
+
+        function clearAll() {
+            if (confirm('모든 localStorage 데이터를 삭제하시겠습니까?\n다시 로그인해야 합니다.')) {
+                localStorage.clear();
+                showResult('✅ localStorage를 전체 초기화했습니다. 다시 로그인해주세요.', true);
+                displayStorage();
+            }
+        }
+
+        function refresh() {
+            location.reload();
+        }
+
+        function showResult(message, success) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = `<div class="result ${success ? 'success' : ''}">${message}</div>`;
+        }
+
+        // 페이지 로드 시 표시
+        displayStorage();
+    </script>
+</body>
+</html>
+

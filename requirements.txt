@@ -1,0 +1,30 @@
+# FastAPI 웹 프레임워크
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+
+# OpenAI API
+openai==1.35.0
+
+# Sentence-Transformers (임베딩)
+sentence-transformers==3.0.0
+torch==2.3.0  # CPU 버전 (GPU 사용 시 별도 설치)
+
+# 데이터베이스
+psycopg2-binary==2.9.9  # PostgreSQL 드라이버
+pgvector==0.3.0  # pgvector Python 클라이언트
+
+# 유틸리티
+python-dotenv==1.0.0
+httpx==0.27.0  # 비동기 HTTP 클라이언트
+pydantic==2.7.0
+pydantic-settings==2.3.0
+
+# 과학 계산
+numpy==1.26.0
+scipy==1.13.0
+
+# 테스트
+pytest==8.2.0
+pytest-asyncio==0.23.0
+pytest-cov==5.0.0
+

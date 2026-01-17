@@ -1,0 +1,76 @@
+# 환경 변수 파일 (보안)
+.env
+.env.local
+.env.*.local
+**/.env
+**/.env.local
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+build/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Next.js
+.next/
+out/
+.vercel
+
+# TypeScript
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Prisma
+prisma/migrations/
+*.db
+*.db-journal
+
+# Docker
+*.env.docker
+
+# 임시 파일
+*.tmp
+*.temp
+.cache/
+
+# 로그
+logs/
+*.log
+
+# GCP 서비스 계정 키 (보안)
+*-[0-9a-f]*.json
+dataventureterabyte-*.json
+service-account-*.json
+gcp-*.json
+
+# 테스트 커버리지 리포트
+coverage/
+.nyc_output/
+*.lcov 

@@ -1,0 +1,124 @@
+name: CD - Deploy to Production (GCP Cloud Run)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# 동시성 제어: 프로덕션 배포는 순차적으로 진행
+concurrency:
+  group: deploy-production-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_REGION: asia-northeast3
+  SERVICE_CORE_IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/flex-recruiter/service-core
+  SERVICE_AI_IMAGE: asia-northeast3-docker.pkg.dev/${{ secrets.GCP_PROJECT_ID }}/flex-recruiter/service-ai
+
+jobs:
+  # Backend Core 배포
+  deploy-service-core:
+    name: Deploy Backend Core to Cloud Run (Production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout 코드
+        uses: actions/checkout@v4
+      
+      - name: GCP 인증
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      
+      - name: Cloud SDK 설정
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Docker 인증
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev
+      
+      - name: Docker 이미지 빌드
+        run: |
+          docker build -t ${{ env.SERVICE_CORE_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.SERVICE_CORE_IMAGE }}:prod-latest \
+                       ./service-core
+      
+      - name: Docker 이미지 푸시
+        run: |
+          docker push ${{ env.SERVICE_CORE_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.SERVICE_CORE_IMAGE }}:prod-latest
+      
+      - name: Cloud Run 배포
+        run: |
+          gcloud run deploy service-core-prod \
+            --image=${{ env.SERVICE_CORE_IMAGE }}:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ env.GCP_REGION }} \
+            --allow-unauthenticated \
+            --set-env-vars="NODE_ENV=production" \
+            --set-secrets="DATABASE_URL=DATABASE_URL_PROD:latest,JWT_SECRET=JWT_SECRET:latest" \
+            --memory=1Gi \
+            --cpu=2 \
+            --min-instances=1 \
+            --max-instances=20 \
+            --port=8080
+
+  # Backend AI 배포
+  deploy-service-ai:
+    name: Deploy Backend AI to Cloud Run (Production)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: production
+    
+    permissions:
+      contents: read
+      id-token: write
+    
+    steps:
+      - name: Checkout 코드
+        uses: actions/checkout@v4
+      
+      - name: GCP 인증
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+      
+      - name: Cloud SDK 설정
+        uses: google-github-actions/setup-gcloud@v2
+      
+      - name: Docker 인증
+        run: gcloud auth configure-docker asia-northeast3-docker.pkg.dev
+      
+      - name: Docker 이미지 빌드
+        run: |
+          docker build -t ${{ env.SERVICE_AI_IMAGE }}:${{ github.sha }} \
+                       -t ${{ env.SERVICE_AI_IMAGE }}:prod-latest \
+                       ./service-ai
+      
+      - name: Docker 이미지 푸시
+        run: |
+          docker push ${{ env.SERVICE_AI_IMAGE }}:${{ github.sha }}
+          docker push ${{ env.SERVICE_AI_IMAGE }}:prod-latest
+      
+      - name: Cloud Run 배포
+        run: |
+          gcloud run deploy service-ai-prod \
+            --image=${{ env.SERVICE_AI_IMAGE }}:${{ github.sha }} \
+            --platform=managed \
+            --region=${{ env.GCP_REGION }} \
+            --no-allow-unauthenticated \
+            --set-secrets="OPENAI_API_KEY=OPENAI_API_KEY:latest" \
+            --memory=2Gi \
+            --cpu=4 \
+            --min-instances=1 \
+            --max-instances=10 \
+            --port=8000
+

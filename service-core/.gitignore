@@ -1,0 +1,23 @@
+# 의존성
+node_modules/
+
+# 환경 변수
+.env
+.env.local
+.env.production
+.env.*.local
+
+# 빌드 출력
+dist/
+
+# 로그
+*.log
+npm-debug.log*
+
+# 업로드된 파일
+uploads/
+
+# OS 파일
+.DS_Store
+Thumbs.db
+
